@@ -1,7 +1,7 @@
 
 # Bluesky Grok Bot
 
-This is a Bluesky bot that automatically replies to mentions and to any public post containing “@grok” using Google Gemini 2.0 via the OpenRouter API.
+Tag @gork.botsky.social on Bluesky to interact!
 
 ## Features
 
