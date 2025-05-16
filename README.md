@@ -3,6 +3,8 @@
 
 Tag @gork.botsky.social on Bluesky to interact!
 
+Amazing prompt written by [Elliot](https://ellioth.co)!
+
 ## Features
 
 * **Responds to all mentions and replies** on Bluesky (via notifications)
