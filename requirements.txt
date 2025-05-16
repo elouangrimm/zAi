@@ -1,0 +1,12 @@
+# Python standard library
+
+# Third-party libraries
+atproto>=0.0.61
+google-generativeai>=0.8.5
+google-genai>=1.14.0
+python-dotenv>=1.0.0
+Pillow>=11.2.1
+requests>=2.32.0
+psutil>=5.9.0
+
+# Add other dependencies here as needed 
