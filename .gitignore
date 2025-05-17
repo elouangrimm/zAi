@@ -1,5 +1,6 @@
 .env
 .venv/
+processed_uris.txt
 
 __pycache__/
 *.pyc
