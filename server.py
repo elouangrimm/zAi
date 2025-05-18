@@ -271,8 +271,6 @@ def main():
 
                 notifications = notifications_response.notifications
                 notifications_fetched_count = len(notifications)
-                if notifications_fetched_count > 0:
-                    logging.info(f"Fetched {notifications_fetched_count} notifications.")
 
                 skipped_this_round = 0
                 for notif in notifications:
@@ -359,7 +357,7 @@ def main():
                 consecutive_idle_cycles = 0
             elif all_skipped:
                 consecutive_idle_cycles += 1
-                print(f"Fetched {notifications_fetched_count}, all skipped. Idle cycle: {consecutive_idle_cycles}.")
+                print(f"... ({consecutive_idle_cycles})")
             elif notifications_fetched_count == 0:
                 consecutive_idle_cycles += 1
                 print(f"No new notifications. Idle cycle: {consecutive_idle_cycles}.")
