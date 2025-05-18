@@ -25,16 +25,13 @@ except ImportError as e:
     print(f"Details: {e}")
     sys.exit(1)
 
-# SCRIPT_DIR for robust file access
 try:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 except NameError: 
     SCRIPT_DIR = os.getcwd()
 
-# PROCESSED_URIS_FILE = os.path.join(SCRIPT_DIR, "processed_uris.txt") # REMOVE THIS
 SYSTEM_PROMPT_FILE = os.path.join(SCRIPT_DIR, "system_prompt.md")
 MODELS_FILE = os.path.join(SCRIPT_DIR, "models.txt")
-# IGNORED_USERS_FILE = os.path.join(SCRIPT_DIR, "ignored_users.txt") # Assuming this was removed for .env approach
 
 BOT_NAME = "zAi Bluesky Bot (Server Mode)"
 BOT_VERSION = "1.4.2" # Version update for new dupe check
@@ -60,14 +57,7 @@ logging.getLogger("atproto_client").setLevel(logging.WARNING)
 # If you were using load_ignored_dids() with IGNORED_USERS_FILE, that logic is now in load_env_and_config_files
 # So, remove the standalone load_ignored_dids() if it exists.
 
-load_dotenv(dotenv_path=os.path.join(SCRIPT_DIR, ".env")) # Load .env from script directory
-BLUESKY_HANDLE = os.getenv("BLUESKY_HANDLE")
-BLUESKY_PASSWORD = os.getenv("BLUESKY_PASSWORD")
-OPENROUTER_API_KEY_PRIMARY = os.getenv("OPENROUTER_API_KEY_PRIMARY")
-OPENROUTER_API_KEY_SECONDARY = os.getenv("OPENROUTER_API_KEY_SECONDARY")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-MENTION_CHECK_INTERVAL_SECONDS = int(os.getenv("MENTION_CHECK_INTERVAL_SECONDS", 30))
-NOTIFICATION_FETCH_LIMIT = int(os.getenv("NOTIFICATION_FETCH_LIMIT", 30))
 SYSTEM_PROMPT_TEMPLATE = ""
 
 def load_env_and_config_files(): # Simplified for server.py, no step_idx_ref
