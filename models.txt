@@ -1,0 +1,3 @@
+google/gemini-2.0-flash-lite-001
+meta-llama/llama-4-maverick:free
+deepseek/deepseek-chat-v3-0324:free

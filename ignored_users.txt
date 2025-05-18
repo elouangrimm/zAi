@@ -1,0 +1,7 @@
+# these are all AI bots, we dont want a reply chain that goes on forever.
+did:plc:x42llmbgu3kkget3yrymddwl
+did:plc:57na4nqoqohad5wk47jlu4rk
+did:plc:kzgyiufe7vfppsg3i5pc24u7
+did:plc:uzc4pbfr7mxp7pzml3vljhif
+did:plc:fwvdvvwstpxpftnbnjiwcsux
+did:plc:3g5vzalrfym4keklsbz6fnfy
