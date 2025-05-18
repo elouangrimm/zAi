@@ -272,7 +272,7 @@ def main():
                 notifications = notifications_response.notifications
                 notifications_fetched_count = len(notifications)
                 if notifications_fetched_count > 0:
-                     logging.info(f"Fetched {notifications_fetched_count} notifications.")
+                    continue
 
                 skipped_this_round = 0
                 for notif in notifications:
@@ -287,7 +287,6 @@ def main():
 
                     author_did = notif.author.did
                     if author_did in IGNORED_DIDS:
-                        logging.info(f"Skipping notification from ignored DID: {author_did} (@{notif.author.handle})")
                         append_processed_uri(notif.uri)
                         processed_uris.add(notif.uri)
                         skipped_this_round +=1
@@ -371,7 +370,6 @@ def main():
     except KeyboardInterrupt:
         logging.info("Shutdown requested by user (Ctrl+C). Bot is stopping...")
     finally:
-        logging.info(f"{BOT_NAME} has shut down. Goodbye!")
         sys.exit(0)
 
 if __name__ == "__main__":
