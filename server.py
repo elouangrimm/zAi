@@ -37,7 +37,7 @@ IGNORED_DIDS = set()
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s"
+    format="%(asctime)s - [%(filename)s:%(lineno)d] - %(message)s"
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("atproto_core").setLevel(logging.WARNING)
@@ -45,11 +45,11 @@ logging.getLogger("atproto_client").setLevel(logging.WARNING)
 
 def load_processed_uris():
     if not os.path.exists(PROCESSED_URIS_FILE):
-        logging.info(f"'{PROCESSED_URIS_FILE}' not found. Starting with an empty set.")
+        print(f"'{PROCESSED_URIS_FILE}' not found. Starting with an empty set.")
         return set()
     with open(PROCESSED_URIS_FILE, "r") as f:
         processed = set(line.strip() for line in f if line.strip())
-        logging.info(f"Loaded {len(processed)} processed URIs from '{PROCESSED_URIS_FILE}'.")
+        print(f"Loaded {len(processed)} processed URIs from '{PROCESSED_URIS_FILE}'.")
         return processed
 
 def append_processed_uri(uri):
@@ -59,14 +59,14 @@ def append_processed_uri(uri):
 def load_ignored_dids():
     global IGNORED_DIDS
     if not os.path.exists(IGNORED_USERS_FILE):
-        logging.info(f"'{IGNORED_USERS_FILE}' not found. No users will be ignored by default.")
+        print(f"'{IGNORED_USERS_FILE}' not found. No users will be ignored by default.")
         IGNORED_DIDS = set()
         return True
     try:
         with open(IGNORED_USERS_FILE, "r", encoding="utf-8") as f:
             dids = {line.strip() for line in f if line.strip() and not line.startswith("#")}
         IGNORED_DIDS = dids
-        logging.info(f"Loaded {len(IGNORED_DIDS)} DIDs from '{IGNORED_USERS_FILE}'.")
+        print(f"Loaded {len(IGNORED_DIDS)} DIDs from '{IGNORED_USERS_FILE}'.")
         return True
     except Exception as e:
         logging.error(f"Error loading ignored users from {IGNORED_USERS_FILE}: {e}", exc_info=True)
@@ -87,7 +87,7 @@ def load_ai_models_from_file(cli_model_override=None):
     
     if cli_model_override:
         AI_MODEL_LIST = [cli_model_override]
-        logging.info(f"Using CLI specified model: {cli_model_override}")
+        print(f"Using CLI specified model: {cli_model_override}")
         return True
 
     try:
@@ -98,7 +98,7 @@ def load_ai_models_from_file(cli_model_override=None):
             return False
 
         AI_MODEL_LIST = models_in_file
-        logging.info(f"AI models loaded: {AI_MODEL_LIST}")
+        print(f"AI models loaded: {AI_MODEL_LIST}")
         return True
     except FileNotFoundError:
         logging.error(f"AI models file '{MODELS_FILE}' not found and no CLI model provided.")
@@ -115,7 +115,7 @@ def load_system_prompt():
         if not SYSTEM_PROMPT_TEMPLATE:
             logging.error(f"{SYSTEM_PROMPT_FILE} is empty.")
             return False
-        logging.info("System prompt loaded successfully.")
+        print("System prompt loaded successfully.")
         return True
     except FileNotFoundError:
         logging.error(f"Critical: System prompt file '{SYSTEM_PROMPT_FILE}' not found.")
@@ -131,10 +131,10 @@ def initialize_bluesky_client():
     if not OPENROUTER_KEY:
         logging.warning("OPENROUTER_KEY missing. Bot will run but cannot generate replies.")
     try:
-        logging.info(f"Attempting to log in to Bluesky as {BLUESKY_HANDLE}...")
+        print(f"Attempting to log in to Bluesky as {BLUESKY_HANDLE}...")
         client = Client()
         client.login(BLUESKY_HANDLE, BLUESKY_PASSWORD)
-        logging.info(f"Successfully logged in to Bluesky as {BLUESKY_HANDLE}")
+        print(f"Successfully logged in to Bluesky as {BLUESKY_HANDLE}")
         return client
     except Exception as e:
         logging.error(f"Bluesky login failed: {e}", exc_info=True)
@@ -144,7 +144,7 @@ def get_post_text(post):
     return post.record.text if hasattr(post, "record") and hasattr(post.record, "text") else ""
 
 def fetch_thread_context(client, uri, original_mentioner_handle=""):
-    logging.info(f"Fetching thread context for URI: {uri} (Mention from: @{original_mentioner_handle})")
+    print(f"Fetching thread context for URI: {uri} (Mention from: @{original_mentioner_handle})")
     try:
         params = GetPostThreadParams(uri=uri)
         thread_response = client.app.bsky.feed.get_post_thread(params=params)
@@ -165,7 +165,7 @@ def fetch_thread_context(client, uri, original_mentioner_handle=""):
         most_recent_post_text = thread_posts[-1] if thread_posts else ""
         thread_history_text = "\n".join(thread_posts[:-1])
         if most_recent_post_text:
-            logging.info(f"Thread context successfully fetched for @{original_mentioner_handle}.")
+            print(f"Thread context successfully fetched for @{original_mentioner_handle}.")
         else:
             logging.warning(f"Empty thread context for @{original_mentioner_handle} from URI {uri}.")
         return thread_history_text, most_recent_post_text
@@ -190,7 +190,7 @@ def get_openrouter_reply(thread_history, most_recent_post_to_reply_to):
     headers = {"Authorization": f"Bearer {OPENROUTER_KEY}"}
     
     for model_to_try in AI_MODEL_LIST:
-        logging.info(f"Attempting reply with AI model: {model_to_try}...")
+        print(f"Attempting reply with AI model: {model_to_try}...")
         payload = {"model": model_to_try, "messages": [{"role": "system", "content": final_system_prompt}, {"role": "user", "content": user_content}]}
         
         try:
@@ -200,7 +200,7 @@ def get_openrouter_reply(thread_history, most_recent_post_to_reply_to):
             if "choices" in response_json and response_json["choices"] and \
                "message" in response_json["choices"][0] and "content" in response_json["choices"][0]["message"]:
                 reply_content = response_json["choices"][0]["message"]["content"].strip()
-                logging.info(f"Successfully received reply from model {model_to_try}. Snippet: \"{reply_content.replace(chr(10),' ')[:40]}...\"")
+                print(f"Successfully received reply from model {model_to_try}. Snippet: \"{reply_content.replace(chr(10),' ')[:40]}...\"")
                 return reply_content
             else:
                 logging.warning(f"Unexpected API response format from {model_to_try}: {response_json}")
@@ -211,7 +211,7 @@ def get_openrouter_reply(thread_history, most_recent_post_to_reply_to):
         except Exception as e:
             logging.error(f"An unexpected error occurred with model {model_to_try}: {e}", exc_info=True)
         
-        logging.info(f"Model {model_to_try} failed. Trying next model if available...")
+        print(f"Model {model_to_try} failed. Trying next model if available...")
         time.sleep(1) 
 
     logging.error("All configured AI models failed to generate a reply.")
@@ -226,7 +226,7 @@ def main():
     
     cli_model_override = args.model
 
-    logging.info(f"Starting {BOT_NAME} v{BOT_VERSION}...")
+    print(f"{BOT_NAME} v{BOT_VERSION}...")
 
     if not load_system_prompt():
         logging.critical("Failed to load system prompt. Exiting.")
@@ -243,13 +243,13 @@ def main():
         sys.exit(1)
     
     processed_uris = load_processed_uris()
-    logging.info(f"Bot is online and monitoring for mentions/replies as @{BLUESKY_HANDLE}.")
+    print(f"Bot is online and monitoring for mentions/replies as @{BLUESKY_HANDLE}.")
     if cli_model_override:
-        logging.info(f"Using AI model (CLI override): {cli_model_override}")
+        print(f"Using AI model (CLI override): {cli_model_override}")
     else:
-        logging.info(f"Using AI model list (from {MODELS_FILE}): {AI_MODEL_LIST}")
+        print(f"Using AI model list (from {MODELS_FILE}): {AI_MODEL_LIST}")
     if IGNORED_DIDS:
-        logging.info(f"Ignoring {len(IGNORED_DIDS)} DIDs from '{IGNORED_USERS_FILE}'.")
+        print(f"Ignoring {len(IGNORED_DIDS)} DIDs from '{IGNORED_USERS_FILE}'.")
 
 
     consecutive_idle_cycles = 0
@@ -309,7 +309,7 @@ def main():
                         skipped_this_round +=1
                         continue
                     
-                    logging.info(f"Processing new {notif.reason} from @{notif.author.handle} (URI: {notif.uri})")
+                    print(f"Processing new {notif.reason} from @{notif.author.handle} (URI: {notif.uri})")
                     
                     thread_history, most_recent_post = fetch_thread_context(client, notif.uri, notif.author.handle)
                     if not most_recent_post:
@@ -337,12 +337,12 @@ def main():
                         if hasattr(notif.record.reply.root,'cid') and hasattr(notif.record.reply.root,'uri'):
                             root_ref = notif.record.reply.root
                     
-                    logging.info(f"Sending reply to @{notif.author.handle} for post {notif.uri}...")
+                    print(f"Sending reply to @{notif.author.handle} for post {notif.uri}...")
                     client.send_post(text=reply_text,reply_to=models.AppBskyFeedPost.ReplyRef(root=root_ref,parent=parent_ref))
                     append_processed_uri(notif.uri)
                     processed_uris.add(notif.uri)
                     new_notifications_processed_this_cycle += 1
-                    logging.info(f"Successfully replied to @{notif.author.handle}. Reply snippet: \"{reply_text.replace(chr(10),' ')[:40]}...\"")
+                    print(f"Successfully replied to @{notif.author.handle}. Reply snippet: \"{reply_text.replace(chr(10),' ')[:40]}...\"")
                 
                 if notifications_fetched_count > 0 and skipped_this_round == notifications_fetched_count:
                     all_skipped = True
@@ -355,20 +355,20 @@ def main():
                 logging.error(f"An unexpected error occurred in the main loop: {e}", exc_info=True)
             
             if new_notifications_processed_this_cycle > 0:
-                logging.info(f"Processed {new_notifications_processed_this_cycle} new notification(s) this cycle.")
+                print(f"Processed {new_notifications_processed_this_cycle} new notification(s) this cycle.")
                 consecutive_idle_cycles = 0
             elif all_skipped:
                 consecutive_idle_cycles += 1
-                logging.info(f"Fetched {notifications_fetched_count}, all skipped. Idle cycle: {consecutive_idle_cycles}.")
+                print(f"Fetched {notifications_fetched_count}, all skipped. Idle cycle: {consecutive_idle_cycles}.")
             elif notifications_fetched_count == 0:
                 consecutive_idle_cycles += 1
-                logging.info(f"No new notifications. Idle cycle: {consecutive_idle_cycles}.")
+                print(f"No new notifications. Idle cycle: {consecutive_idle_cycles}.")
             
             logging.debug(f"Waiting {MENTION_CHECK_INTERVAL_SECONDS} seconds...")
             time.sleep(MENTION_CHECK_INTERVAL_SECONDS)
 
     except KeyboardInterrupt:
-        logging.info("Shutdown requested by user (Ctrl+C). Bot is stopping...")
+        print("Shutdown requested by user (Ctrl+C). Bot is stopping...")
     finally:
         sys.exit(0)
 
