@@ -272,7 +272,7 @@ def main():
                 notifications = notifications_response.notifications
                 notifications_fetched_count = len(notifications)
                 if notifications_fetched_count > 0:
-                    continue
+                    logging.info(f"Fetched {notifications_fetched_count} notifications.")
 
                 skipped_this_round = 0
                 for notif in notifications:
