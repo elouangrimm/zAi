@@ -71,13 +71,13 @@ def load_env_and_config_files():
         try:
             from dotenv import load_dotenv
             load_dotenv(dotenv_path=env_path, override=True)
-            logging.info(f"Loaded environment variables from: {env_path}")
+            logging.debug(f"Loaded environment variables from: {env_path}")
         except ImportError:
             logging.warning("python-dotenv module not found, cannot load .env file. Relying on platform env vars.")
         except Exception as e_dotenv:
             logging.warning(f"Error loading .env file from {env_path}: {e_dotenv}. Relying on platform env vars.")
     else:
-        logging.info(f".env file not found at {env_path}. Relying on platform environment variables.")
+        logging.debug(f".env file not found at {env_path}. Relying on platform environment variables.")
 
     BLUESKY_HANDLE = os.getenv("BLUESKY_HANDLE")
     BLUESKY_PASSWORD = os.getenv("BLUESKY_PASSWORD")
@@ -98,7 +98,7 @@ def load_env_and_config_files():
         with open(SYSTEM_PROMPT_FILE, "r", encoding="utf-8") as f:
             SYSTEM_PROMPT_TEMPLATE = f.read()
         if not SYSTEM_PROMPT_TEMPLATE: logging.error(f"{SYSTEM_PROMPT_FILE} is empty.")
-        else: logging.info(f"System prompt loaded successfully from {SYSTEM_PROMPT_FILE}.")
+        else: logging.debug(f"System prompt loaded successfully from {SYSTEM_PROMPT_FILE}.")
     except FileNotFoundError: logging.critical(f"System prompt file '{SYSTEM_PROMPT_FILE}' not found. Exiting."); sys.exit(1)
     except Exception as e: logging.error(f"Error loading system prompt from {SYSTEM_PROMPT_FILE}: {e}", exc_info=True); sys.exit(1)
 
@@ -106,7 +106,7 @@ def load_env_and_config_files():
     if ignored_dids_str:
         IGNORED_DIDS = {did.strip() for did in ignored_dids_str.split(',') if did.strip()}
     else: IGNORED_DIDS = set()
-    logging.info(f"Loaded {len(IGNORED_DIDS)} ignored DIDs (from env or default).")
+    logging.debug(f"Loaded {len(IGNORED_DIDS)} ignored DIDs (from env or default).")
     
     return True
 
@@ -125,7 +125,7 @@ def load_ai_models_from_file(cli_model_override=None):
             AI_MODEL_LIST = ["google/gemini-2.0-flash-exp:free"]
             return True 
         AI_MODEL_LIST = models_in_file
-        logging.info(f"AI models loaded from '{MODELS_FILE}': {AI_MODEL_LIST}")
+        logging.debug(f"AI models loaded from '{MODELS_FILE}': {AI_MODEL_LIST}")
         return True
     except FileNotFoundError:
         logging.warning(f"AI models file '{MODELS_FILE}' not found. Using fallback single model.")
@@ -140,7 +140,7 @@ def initialize_bluesky_client():
     if not BLUESKY_HANDLE or not BLUESKY_PASSWORD: logging.error("Bluesky credentials missing."); return None
     if not OPENROUTER_API_KEY_PRIMARY: logging.warning("Primary OpenRouter API Key missing.")
     try:
-        logging.info(f"Attempting to log in to Bluesky as {BLUESKY_HANDLE}...")
+        logging.debug(f"Attempting to log in to Bluesky as {BLUESKY_HANDLE}...")
         client = Client()
         client.login(BLUESKY_HANDLE, BLUESKY_PASSWORD)
         logging.info(f"Successfully logged in to Bluesky as {BLUESKY_HANDLE}")
@@ -151,7 +151,7 @@ def get_post_text(post):
     return post.record.text if hasattr(post, "record") and hasattr(post.record, "text") else ""
 
 def fetch_thread_context(client, uri, original_mentioner_handle=""):
-    logging.info(f"Fetching thread context for URI: {uri} (Mention from: @{original_mentioner_handle})")
+    logging.debug(f"Fetching thread context for URI: {uri} (Mention from: @{original_mentioner_handle})")
     try:
         params = GetPostThreadParams(uri=uri, depth=10)
         thread_response = client.app.bsky.feed.get_post_thread(params=params)
@@ -167,7 +167,7 @@ def fetch_thread_context(client, uri, original_mentioner_handle=""):
         else: logging.warning(f"No valid 'thread' in response for {uri}."); return "", ""
         most_recent_post_text = thread_posts[-1] if thread_posts else ""
         thread_history_text = "\n".join(thread_posts[:-1])
-        if most_recent_post_text: logging.info(f"Thread context successfully fetched for @{original_mentioner_handle}.")
+        if most_recent_post_text: logging.debug(f"Thread context successfully fetched for @{original_mentioner_handle}.")
         else: logging.warning(f"Empty thread context for @{original_mentioner_handle} from URI {uri}.")
         return thread_history_text, most_recent_post_text
     except Exception as e: logging.error(f"Error fetching thread ({uri}) for @{original_mentioner_handle}: {e}", exc_info=True); return "", ""
@@ -190,7 +190,7 @@ def get_openrouter_reply(thread_history, most_recent_post_to_reply_to):
         if not current_api_key: continue
         key_label = "Primary" if key_index == 0 else "Secondary"
         for model_to_try in AI_MODEL_LIST:
-            logging.info(f"Attempting reply with AI model: {model_to_try} using {key_label} Key...")
+            logging.debug(f"Attempting reply with AI model: {model_to_try} using {key_label} Key...")
             headers = {"Authorization": f"Bearer {current_api_key}"}
             payload = {"model": model_to_try, "messages": [{"role": "system", "content": final_system_prompt}, {"role": "user", "content": user_content}]}
             try:
@@ -203,7 +203,7 @@ def get_openrouter_reply(thread_history, most_recent_post_to_reply_to):
                 response_json = resp.json()
                 if "choices" in response_json and response_json["choices"] and "message" in response_json["choices"][0] and "content" in response_json["choices"][0]["message"]:
                     reply_content = response_json["choices"][0]["message"]["content"].strip()
-                    logging.info(f"Successfully received reply from model {model_to_try} ({key_label} Key). Snippet: \"{reply_content.replace(chr(10),' ')[:40]}...\"")
+                    logging.debug(f"Successfully received reply from model {model_to_try} ({key_label} Key). Snippet: \"{reply_content.replace(chr(10),' ')[:40]}...\"")
                     return reply_content
                 else: logging.warning(f"Unexpected API response format from {model_to_try} ({key_label} Key): {response_json}")
             except requests.exceptions.HTTPError as http_err:
@@ -213,7 +213,7 @@ def get_openrouter_reply(thread_history, most_recent_post_to_reply_to):
             except Exception as e: logging.error(f"An unexpected error occurred ({key_label} Key) with model {model_to_try}: {e}", exc_info=True)
             logging.debug(f"Model {model_to_try} ({key_label} Key) failed. Trying next model if available...")
             time.sleep(0.5)
-        if key_index == 0 and OPENROUTER_API_KEY_SECONDARY: logging.info(f"Primary API key failed or was rate limited with all models. Trying Secondary key.")
+        if key_index == 0 and OPENROUTER_API_KEY_SECONDARY: logging.info(f"Primary API key failed or was rate limited with all models. Trying Secondary key...")
         elif key_index > 0 : logging.warning(f"Secondary API key also failed with all models.")
 
     logging.error("All configured AI models and API keys failed to generate a reply.")
@@ -231,7 +231,7 @@ def has_bot_already_replied(client, bot_handle, parent_post_uri):
                 if isinstance(reply_view, models.AppBskyFeedDefs.ThreadViewPost) and \
                    reply_view.post and reply_view.post.author and \
                    reply_view.post.author.handle == bot_handle:
-                    logging.info(f"[Dupe Check] Bot already replied ({reply_view.post.uri}) to {parent_post_uri}.")
+                    logging.debug(f"[Dupe Check] Bot already replied ({reply_view.post.uri}) to {parent_post_uri}.")
                     return True
         return False
     except Exception as e:
@@ -261,8 +261,8 @@ def main():
     
     logging.info(f"Bot is online and monitoring for mentions/replies as @{BLUESKY_HANDLE}.")
     if cli_model_override: logging.info(f"Using AI model (CLI override): {cli_model_override}")
-    else: logging.info(f"Using AI model list (from {MODELS_FILE}): {AI_MODEL_LIST}")
-    if IGNORED_DIDS: logging.info(f"Ignoring {len(IGNORED_DIDS)} DIDs.")
+    else: logging.debug(f"Using AI model list (from {MODELS_FILE}): {AI_MODEL_LIST}")
+    if IGNORED_DIDS: logging.debug(f"Ignoring {len(IGNORED_DIDS)} DIDs.")
 
     last_seen_notification_timestamp = None
     consecutive_idle_cycles = 0
@@ -282,7 +282,7 @@ def main():
                     notifications = sorted(notifications_response.notifications, key=lambda n: n.indexed_at)
                     notifications_fetched_count = len(notifications)
                     if notifications_fetched_count > 0:
-                        logging.info(f"Fetched {notifications_fetched_count} notifications.")
+                        logging.debug(f"Fetched {notifications_fetched_count} notifications.")
                         current_batch_latest_timestamp = notifications[-1].indexed_at
 
                     for notif in notifications:
@@ -299,7 +299,7 @@ def main():
                             continue
                         author_did = notif.author.did
                         if author_did in IGNORED_DIDS:
-                            logging.info(f"Skipping notification from ignored DID: {author_did} (@{notif.author.handle})")
+                            logging.debug(f"Skipping notification from ignored DID: {author_did} (@{notif.author.handle})")
                             PROCESSED_NOTIFS_THIS_RUN.add(notif.uri)
                             continue
                         if notif.author.handle == BLUESKY_HANDLE:
@@ -315,7 +315,7 @@ def main():
                         logging.info(f"Processing new {notif.reason} from @{notif.author.handle} (URI: {notif.uri})")
                         
                         if has_bot_already_replied(client, BLUESKY_HANDLE, notif.uri):
-                            logging.info(f"Duplicate: Bot has already replied to {notif.uri}. Skipping.")
+                            logging.debug(f"Duplicate: Bot has already replied to {notif.uri}. Skipping.")
                             continue
 
                         thread_history, most_recent_post = fetch_thread_context(client, notif.uri, notif.author.handle)
@@ -334,17 +334,17 @@ def main():
                         if hasattr(notif.record,"reply") and notif.record.reply and hasattr(notif.record.reply,"root") and notif.record.reply.root:
                             if hasattr(notif.record.reply.root,'cid') and hasattr(notif.record.reply.root,'uri'):
                                 root_ref = notif.record.reply.root
-                        logging.info(f"Sending reply to @{notif.author.handle} for post {notif.uri}...")
+                        logging.debug(f"Sending reply to @{notif.author.handle} for post {notif.uri}...")
                         client.send_post(text=reply_text,reply_to=models.AppBskyFeedPost.ReplyRef(root=root_ref,parent=parent_ref))
                         new_notifications_processed_this_cycle += 1
                         logging.info(f"Successfully replied to @{notif.author.handle}. Reply snippet: \"{reply_text.replace(chr(10),' ')[:40]}...\"")
                 else:
-                    logging.info("No new notifications in this fetch.")
+                    logging.debug("No new notifications in this fetch.")
 
                 if current_batch_latest_timestamp:
                     try:
                         client.app.bsky.notification.update_seen({'seenAt': current_batch_latest_timestamp})
-                        logging.info(f"Updated seen notifications timestamp to: {current_batch_latest_timestamp}")
+                        logging.debug(f"Updated seen notifications timestamp to: {current_batch_latest_timestamp}")
                         last_seen_notification_timestamp = current_batch_latest_timestamp
                     except Exception as e_update_seen:
                         logging.error(f"Error calling update_seen: {e_update_seen}", exc_info=True)
@@ -354,17 +354,17 @@ def main():
             except Exception as e: logging.error(f"An unexpected error occurred in the main loop: {e}", exc_info=True)
             
             if new_notifications_processed_this_cycle > 0:
-                logging.info(f"Processed {new_notifications_processed_this_cycle} new notification(s) this cycle.")
+                logging.debug(f"Processed {new_notifications_processed_this_cycle} new notification(s) this cycle.")
                 consecutive_idle_cycles = 0
             elif notifications_fetched_count > 0 :
-                logging.info(f"Fetched {notifications_fetched_count} notifications, but none resulted in a new reply this cycle.")
+                logging.debug(f"Fetched {notifications_fetched_count} notifications, but none resulted in a new reply this cycle.")
                 consecutive_idle_cycles +=1
             else: 
-                logging.info(f"No new notifications fetched this cycle.")
+                logging.debug(f"No new notifications fetched this cycle.")
                 consecutive_idle_cycles +=1
             
             if consecutive_idle_cycles > 0:
-                 logging.info(f"Idle cycle: {consecutive_idle_cycles}.")
+                 logging.info(f"... ({consecutive_idle_cycles})")
 
             logging.debug(f"Waiting {MENTION_CHECK_INTERVAL_SECONDS} seconds...")
             time.sleep(MENTION_CHECK_INTERVAL_SECONDS)
@@ -372,7 +372,6 @@ def main():
     except KeyboardInterrupt:
         logging.info("Shutdown requested by user (Ctrl+C). Bot is stopping...")
     finally:
-        logging.info(f"{BOT_NAME} has shut down. Goodbye!")
         sys.exit(0)
 
 if __name__ == "__main__":
