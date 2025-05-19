@@ -1,6 +1,6 @@
 # zAi - Bluesky AI Bot
 
-Tag `@zai.elouan.xyz` on Bluesky to interact!
+Tag `@zai.botsky.social` on Bluesky to interact!
 
 ## Features
 
@@ -19,7 +19,7 @@ Tag `@zai.elouan.xyz` on Bluesky to interact!
    ```env
    BLUESKY_HANDLE=your-bluesky-handle
    BLUESKY_PASSWORD=your-bluesky-password
-   OPENROUTER_KEY=your-openrouter-api-key
+   OPENROUTER_API_KEY_PRIMARY=your-openrouter-api-key
    ```
 
 3. **Install dependencies** (requires Python 3.8+):
